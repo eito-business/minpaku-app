@@ -4,6 +4,8 @@ import { MapPin } from "lucide-react";
 import { getListings } from "@/lib/supabase/database/listings";
 import { createServerClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 export default async function ListingsPage() {
   const listings = await getListings();
   const supabase = await createServerClient();

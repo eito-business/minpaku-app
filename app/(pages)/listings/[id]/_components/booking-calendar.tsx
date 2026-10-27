@@ -69,11 +69,11 @@ const BookingCalendar = ({ listing, reservations }: BookingCalendarProps) => {
                 onSelect={handleDateSelect}
                 disabled={isDateDisabled}
                 classNames={{
-                  day_range_start: 'bg-emerald-500 text-white rounded-full',
-                  day_range_end: 'bg-emerald-500 text-white rounded-full',
-                  day_range_middle: 'bg-emerald-50 text-emerald-500',
-                  day_selected: 'bg-emerald-500 text-white',
-                  day_today: 'border border-slate-300',
+                  range_start: 'bg-emerald-500 text-white rounded-full',
+                  range_end: 'bg-emerald-500 text-white rounded-full',
+                  range_middle: 'bg-emerald-50 text-emerald-500',
+                  selected: 'bg-emerald-500 text-white',
+                  today: 'border border-slate-300',
                 }}
               />
               {/* 日付範囲エラーの表示 */}
