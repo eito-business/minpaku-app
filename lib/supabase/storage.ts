@@ -58,10 +58,20 @@ export const uploadMultipleListingImages = async (
 export const deleteListingImage = async (url: string) => {
   const supabase = await createServerClient();
 
-  // 公開URLからパスを抽出
-  const bucketBaseUrl = supabase.storage.from(STORAGE_BUCKET).getPublicUrl('')
-    .data.publicUrl;
-  const filePath = url.replace(bucketBaseUrl, '');
+  const imageUrl = new URL(url);
+  const objectPathPrefix = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const objectPathStart = imageUrl.pathname.indexOf(objectPathPrefix);
+
+  if (objectPathStart === -1) {
+    throw new Error('物件画像のURLがSupabase Storageの形式ではありません。');
+  }
+
+  const filePath = decodeURIComponent(
+    imageUrl.pathname.slice(objectPathStart + objectPathPrefix.length)
+  );
+  if (!filePath) {
+    throw new Error('物件画像の保存パスを取得できませんでした。');
+  }
 
   const { error } = await supabase.storage
     .from(STORAGE_BUCKET)

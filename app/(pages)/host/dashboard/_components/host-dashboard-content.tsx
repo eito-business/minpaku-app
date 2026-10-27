@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { parseDateRange } from '@/lib/supabase/utils/date-range-parser';
 import type { HostListingWithDetails } from '@/lib/supabase/database/listings';
 import { Tables } from '@/lib/supabase/types/database.types';
+import DeleteListingButton from './delete-listing-button';
 
 type ReservationWithListingTitle = Tables<'reservations'> & {
   listingTitle: string;
@@ -167,16 +168,22 @@ export default function HostDashboardContent({
                           <span className='font-semibold'>
                             ¥{listing.price.toLocaleString()}/泊
                           </span>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            className='h-8 px-2'
-                            asChild
-                          >
-                            <Link href={`/host/listings/${listing.id}/edit`}>
-                              編集
-                            </Link>
-                          </Button>
+                          <div className='flex items-center gap-2'>
+                            <DeleteListingButton
+                              listingId={listing.id}
+                              listingTitle={listing.title}
+                            />
+                            <Button
+                              variant='ghost'
+                              size='sm'
+                              className='h-8 px-2'
+                              asChild
+                            >
+                              <Link href={`/host/listings/${listing.id}/edit`}>
+                                編集
+                              </Link>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -222,18 +222,25 @@ export const updateListing = async (
  * データベーススキーマのCASCADE削除により、リスティングを削除すると
  * 関連するすべての画像も自動的に削除されます。
  */
-export const deleteListing = async (listingId: string) => {
+export const deleteListing = async (listingId: string, userId: string) => {
   const supabase = await createServerClient();
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('listings')
     .delete()
-    .eq('id', listingId);
+    .eq('id', listingId)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('Error deleting listing:', error);
     throw new Error(`Error deleting listing: ${error.message}`);
   }
 
-  return true;
+  if (!data) {
+    throw new Error('物件が見つからないか、削除する権限がありません。');
+  }
+
+  return data;
 };

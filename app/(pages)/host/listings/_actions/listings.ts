@@ -4,6 +4,7 @@ import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 import {
   createListing,
+  deleteListing,
   getListingById,
   updateListing,
 } from '@/lib/supabase/database/listings';
@@ -12,7 +13,11 @@ import {
   deleteListingImageRecord,
   updateImageOrders,
 } from '@/lib/supabase/database/images';
-import { uploadMultipleListingImages } from '@/lib/supabase/storage';
+import {
+  deleteListingImage,
+  uploadMultipleListingImages,
+} from '@/lib/supabase/storage';
+import { createServerClient } from '@/lib/supabase/server';
 import {
   CreateListingSchema,
   UpdateListingSchema,
@@ -32,6 +37,79 @@ export type ActionResult<T> =
   | { success: true; data: T }
   | { success: false; error: string; fieldErrors?: Record<string, string[]> };
 type ListingImage = Tables<'listing_images'>;
+
+export async function deleteListingAction(
+  listingId: string
+): Promise<ActionResult<{ listingId: string; warning?: string }>> {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'ログインが必要です。' };
+    }
+
+    const supabase = await createServerClient();
+    const { data: listing, error: listingError } = await supabase
+      .from('listings')
+      .select('id, listing_images(url), reservations(id)')
+      .eq('id', listingId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (listingError) {
+      console.error('Error checking listing before deletion:', listingError);
+      return {
+        success: false,
+        error: '物件情報の確認中にエラーが発生しました。',
+      };
+    }
+
+    if (!listing) {
+      return {
+        success: false,
+        error: '物件が見つからないか、削除する権限がありません。',
+      };
+    }
+
+    if (listing.reservations.length > 0) {
+      return {
+        success: false,
+        error: '予約がある物件は削除できません。',
+      };
+    }
+
+    for (const image of listing.listing_images) {
+      try {
+        await deleteListingImage(image.url);
+      } catch (error) {
+        console.error('Error deleting listing image from storage:', error);
+        return {
+          success: false,
+          error:
+            error instanceof Error
+              ? `画像を削除できませんでした。Supabase Storageの削除ポリシーを確認してください。詳細: ${error.message}`
+              : '画像を削除できませんでした。Supabase Storageの削除ポリシーを確認してください。',
+        };
+      }
+    }
+
+    await deleteListing(listingId, userId);
+
+    revalidatePath('/host/dashboard');
+    revalidatePath('/listings');
+    revalidatePath(`/listings/${listingId}`);
+
+    return { success: true, data: { listingId } };
+  } catch (error) {
+    console.error('Unexpected error in deleteListingAction:', error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : '物件の削除中にエラーが発生しました。',
+    };
+  }
+}
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES = 3;
